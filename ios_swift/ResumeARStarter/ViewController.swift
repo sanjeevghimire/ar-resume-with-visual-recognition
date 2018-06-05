@@ -35,7 +35,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     var bounds: CGRect = CGRect(x: 0, y: 0, width: 0, height: 0)
     var visualRecognition: VisualRecognition?
     var cloudantRestCall: CloudantRESTCall?
-    var classifierIds: [String] = ["SanjeevGhimire_967590069","ScottDAngelo_1040670748","SteveMartinelli_2096165720"]
+    //var classifierIds: [String] = ["SteveMartinelli_2096165720"]
+    var classifierIds: [String] = ["DefaultCustomModel_2017651183"]
 
     let VERSION = "2017-12-07"
 
@@ -55,59 +56,15 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.showsStatistics = true
         sceneView.autoenablesDefaultLighting = true
         bounds = sceneView.bounds
-        //configure IBM cloud services required by this app
-        self.configureCloudantAndVisualRecognition()
+        
+        // STEP 2: BEGIN. MARK:configure IBM cloud services required by this app
+        
+        // STEP 2: END. MARK:configure IBM cloud services required by this app
 
-        self.cloudantRestCall?.createDatabase(databaseName: Constant.databaseName){ (dbDetails) in
-            print(dbDetails)
-            if(dbDetails["ok"].exists()){
-                //add info for test database.
-                let userData1 = ["classificationId": "SteveMartinelli_2096165720",
-                                 "fullname": Constant.SteveName,
-                                 "linkedin": Constant.SteveLI,
-                                 "twitter": Constant.SteveTW,
-                                 "facebook": Constant.SteveFB,
-                                 "phone": Constant.StevePh,
-                                 "location": Constant.SteveLoc]
-
-                self.cloudantRestCall?.updatePersonData(userData: JSON(userData1)){ (resultJSON) in
-                    if(!resultJSON["ok"].boolValue){
-                        print("Error while saving user Data",userData1)
-                        return
-                    }
-                }
-
-                let userData2 = ["classificationId": "SanjeevGhimire_967590069",
-                                 "fullname": Constant.SanjeevName,
-                                 "linkedin": Constant.SanjeevLI,
-                                 "twitter": Constant.SanjeevTW,
-                                 "facebook": Constant.SanjeevFB,
-                                 "phone": Constant.SanjeevPh,
-                                 "location": Constant.SanjeevLoc]
-
-                self.cloudantRestCall?.updatePersonData(userData: JSON(userData2)){ (resultJSON) in
-                    if(!resultJSON["ok"].boolValue){
-                        print("Error while saving user Data",userData2)
-                        return
-                    }
-                }
-
-                let userData3 = ["classificationId": "ScottDAngelo_1040670748",
-                                 "fullname": Constant.ScottName,
-                                 "linkedin": Constant.ScottLI,
-                                 "twitter": Constant.ScottTW,
-                                 "facebook": Constant.ScottFB,
-                                 "phone": Constant.ScottPh,
-                                 "location": Constant.ScottLoc]
-
-                self.cloudantRestCall?.updatePersonData(userData: JSON(userData3)){ (resultJSON) in
-                    if(!resultJSON["ok"].boolValue){
-                        print("Error while saving user Data",userData3)
-                        return
-                    }
-                }
-            }
-        }
+        //STEP 3 MARK: Add code to save info about the person in cloudant database
+        
+        
+        //STEP 3: END MARK: Add code to save info about the person in cloudant database
 
         let localModels = try? self.visualRecognition?.listLocalModels()
             if let count = localModels??.count, count > 0 {
@@ -143,25 +100,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // {{analyticsLoggerSend}}
     }
 
-    // Setup cloudant driver and visual recognition api
-    func configureCloudantAndVisualRecognition() {
-        // Retrieve plist
-        guard let path = Bundle.main.path(forResource: "BMSCredentials", ofType: "plist"),
-            let credentials = NSDictionary(contentsOfFile: path) as? [String: AnyObject] else {
-                return
-        }
-
-        // Retrieve credentials
-        guard let vrApiKey = credentials["visualrecognitionApi_key"] as? String, !vrApiKey.isEmpty,
-            let url = credentials["cloudantUrl"] as? String, !url.isEmpty else {
-                return
-        }
-
-        self.visualRecognition = VisualRecognition.init(apiKey: vrApiKey, version: self.VERSION)
-        self.cloudantRestCall = CloudantRESTCall.init(cloudantUrl: url)
-        self.cloudantRestCall?.database = Constant.databaseName
-
-    }
+    //STEP 1 : MARK:  Setup cloudant driver and visual recognition api in a method
+    
+    //STEP 1 END : MARK:  Setup cloudant driver and visual recognition api
+    
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -250,28 +192,12 @@ class ViewController: UIViewController, ARSCNViewDelegate {
                 return Disposables.create()
             }
 
-            // Create and rotate image
-            let image = CIImage.init(cvPixelBuffer: frame.capturedImage).rotate
-            let facesRequest = VNDetectFaceRectanglesRequest { request, error in
-                guard error == nil else {
-                    print("Face request error: \(error!.localizedDescription)")
-                    observer.onCompleted()
-                    return
-                }
-                guard let observations = request.results as? [VNFaceObservation] else {
-                    print("No face observations")
-                    observer.onCompleted()
-                    return
-                }
-                // Map response
-                let response = observations.map({ (face) -> (observation: VNFaceObservation, image: CIImage, frame: ARFrame) in
-                    return (observation: face, image: image, frame: frame)
-                })
-                observer.onNext(response)
-                observer.onCompleted()
-
-            }
-            try? VNImageRequestHandler(ciImage: image).perform([facesRequest])
+            //STEP 4 BEGIN: MARK: VISION API TO
+            
+            
+            
+            //STEP 4 END: MARK: VISION API TO
+    
 
             return Disposables.create()
         }
@@ -294,16 +220,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             //convert the cropped image to UI image
             let uiImage: UIImage = self.convert(cmage: pixel)
 
-            let failure = { (error: Error) in print(error) }
-            guard let visualRecognition = self.visualRecognition else {
-                print("No handle on visual recognition service")
-                observer.onCompleted()
-                return Disposables.create()
-            }
-            visualRecognition.classifyWithLocalModel(image: uiImage, classifierIDs: self.classifierIds, threshold: 0, failure: failure) { classifiedImages in
-                  observer.onNext((classes: classifiedImages.images, position: worldCoord, frame: frame))
-                  observer.onCompleted()
-            }
+            //MARK STEP 5: CLASSIFY USING LOCAL MODE
+            
+            
+            //MARK STEP 5 END: CLASSIFY USING LOCAL MODE
 
             return Disposables.create()
         }
@@ -411,19 +331,11 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let results = self.faces.filter{ $0.name == name && $0.timestamp != frame.timestamp }
             .sorted{ $0.node.position.distance(toVector: position) < $1.node.position.distance(toVector: position) }
 
-        // Create new face
-        //note:: texture
         guard let existentFace = results.first else {
-            self.cloudantRestCall?.getResumeInfo(classificationId: classifierId!) { (resultJSON) in
-                let node = SCNNode.init(withJSON: resultJSON["docs"][0], position: position)
-                DispatchQueue.main.async {
-                    self.sceneView.scene.rootNode.addChildNode(node)
-                    node.show()
-                }
-                let face = Face.init(name: name!, node: node, timestamp: frame.timestamp)
-                self.faces.append(face)
-            }
-            return
+        //STEP 6 BEGIN: CREATE NODES FOR ALL THE DATA THA NEEDS TO BE DISPLAYED IN CAMERA
+        //replace this as well
+        return
+        //STEP 6 END: CREATE NODES FOR ALL THE DATA THA NEEDS TO BE DISPLAYED IN CAMERA
         }
         // Update existent face
         DispatchQueue.main.async {
@@ -456,18 +368,13 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     private func updateToLocalModels() -> Observable<Bool>{
         return Observable<Bool>.create{ observer in
             // check if visual recognition is not ready yet.
-            self.visualRecognition?.listClassifiers(){ classifiers in
-                let count: Int = classifiers.classifiers.count
-                if(count > 0 && classifiers.classifiers[0].status == "ready"){
-                    classifiers.classifiers.forEach{
-                        classifier in
-                        if(!self.classifierIds.contains(classifier.classifierID)){
-                            self.classifierIds.append(classifier.classifierID)
-                        }
-                        self.visualRecognition?.updateLocalModel(classifierID: classifier.classifierID)
-                    }
-                }
-            }
+            
+            //STEP 7: UPDATE LOCAL MODEL BEGIN
+           
+            
+            //STEP 7`: UPDATE LOCAL MODEL END
+            
+            
             observer.onNext(true)
             observer.onCompleted()
             return Disposables.create()
